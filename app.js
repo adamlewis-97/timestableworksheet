@@ -52,6 +52,20 @@ function createTimesTableCheckboxes() {
         label.appendChild(checkbox);
         label.appendChild(text);
         tablesGrid.appendChild(label);
+        
+        // Add event listener to update checked state class
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                label.classList.add('checkbox-checked');
+            } else {
+                label.classList.remove('checkbox-checked');
+            }
+        });
+        
+        // Set initial state
+        if (checkbox.checked) {
+            label.classList.add('checkbox-checked');
+        }
     }
 }
 
@@ -68,6 +82,13 @@ function setupEventListeners() {
     slider.addEventListener('input', function() {
         valueDisplay.textContent = this.value;
     });
+    
+    // Preset button listeners
+    document.getElementById('presetTwoToTwelve').addEventListener('click', handlePresetTwoToTwelve);
+    document.getElementById('presetEasyTables').addEventListener('click', handlePresetEasyTables);
+    document.getElementById('presetTenAndTwenty').addEventListener('click', handlePresetTenAndTwenty);
+    document.getElementById('presetThirteenToTwenty').addEventListener('click', handlePresetThirteenToTwenty);
+    document.getElementById('presetClearAll').addEventListener('click', handlePresetClearAll);
 }
 
 /* ============================================
@@ -111,6 +132,134 @@ function validateInputs() {
 function getSelectedTables() {
     const checkboxes = document.querySelectorAll('#tablesGrid input[type="checkbox"]:checked');
     return Array.from(checkboxes).map(cb => parseInt(cb.value, 10));
+}
+
+/**
+ * Triggers the preset applied animation
+ */
+function triggerPresetAnimation() {
+    const checkboxes = document.querySelectorAll('#tablesGrid .checkbox-label');
+    
+    // Add animation class to affected checkboxes and update checked state
+    checkboxes.forEach(label => {
+        const checkbox = label.querySelector('.checkbox-input');
+        if (checkbox) {
+            // Update checked state class
+            if (checkbox.checked) {
+                label.classList.add('checkbox-checked');
+                label.classList.add('preset-applied');
+            } else {
+                label.classList.remove('checkbox-checked');
+            }
+        }
+    });
+    
+    // Remove animation classes after animation completes
+    setTimeout(() => {
+        checkboxes.forEach(label => {
+            label.classList.remove('preset-applied');
+        });
+    }, 400);
+}
+
+/**
+ * Handles the "2–12" preset button click
+ * Unchecks all tables first, then checks 2× to 12×
+ */
+function handlePresetTwoToTwelve() {
+    const checkboxes = document.querySelectorAll('#tablesGrid input[type="checkbox"]');
+    // First, uncheck everything
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    // Then, check only 2× to 12×
+    checkboxes.forEach(checkbox => {
+        const value = parseInt(checkbox.value, 10);
+        if (value >= 2 && value <= 12) {
+            checkbox.checked = true;
+        }
+    });
+    triggerPresetAnimation();
+}
+
+/**
+ * Handles the "2, 5, 10 only" preset button click
+ * Unchecks all tables first, then checks only 2×, 5×, and 10×
+ */
+function handlePresetEasyTables() {
+    const checkboxes = document.querySelectorAll('#tablesGrid input[type="checkbox"]');
+    // First, uncheck everything
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    // Then, check only 2×, 5×, and 10×
+    checkboxes.forEach(checkbox => {
+        const value = parseInt(checkbox.value, 10);
+        if (value === 2 || value === 5 || value === 10) {
+            checkbox.checked = true;
+        }
+    });
+    triggerPresetAnimation();
+}
+
+/**
+ * Handles the "10 and 20" preset button click
+ * Unchecks all tables first, then checks only 10× and 20×
+ */
+function handlePresetTenAndTwenty() {
+    const checkboxes = document.querySelectorAll('#tablesGrid input[type="checkbox"]');
+    // First, uncheck everything
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    // Then, check only 10× and 20×
+    checkboxes.forEach(checkbox => {
+        const value = parseInt(checkbox.value, 10);
+        if (value === 10 || value === 20) {
+            checkbox.checked = true;
+        }
+    });
+    triggerPresetAnimation();
+}
+
+/**
+ * Handles the "13–20" preset button click
+ * Unchecks all tables first, then checks 13× to 20×
+ */
+function handlePresetThirteenToTwenty() {
+    const checkboxes = document.querySelectorAll('#tablesGrid input[type="checkbox"]');
+    // First, uncheck everything
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    // Then, check only 13× to 20×
+    checkboxes.forEach(checkbox => {
+        const value = parseInt(checkbox.value, 10);
+        if (value >= 13 && value <= 20) {
+            checkbox.checked = true;
+        }
+    });
+    triggerPresetAnimation();
+}
+
+/**
+ * Handles the "Clear all" preset button click
+ * Unchecks all times table checkboxes and removes highlight
+ */
+function handlePresetClearAll() {
+    const checkboxes = document.querySelectorAll('#tablesGrid input[type="checkbox"]');
+    const labels = document.querySelectorAll('#tablesGrid .checkbox-label');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    
+    // Explicitly remove the highlight class from all labels
+    labels.forEach(label => {
+        label.classList.remove('checkbox-checked');
+    });
+    
+    // No animation for clear all as nothing is selected
 }
 
 /**
@@ -550,6 +699,9 @@ function downloadWorksheetPdf(questions) {
 // Global state for presentation mode
 let presentationAnswersVisible = false;
 let presentationResizeHandler = null; // Store resize handler for cleanup
+let presentationKeyboardHandler = null; // Store keyboard handler for cleanup
+let helpTooltipAutoShowTimeout = null; // Store auto-show timeout for cleanup
+let helpTooltipClickOutsideHandler = null; // Store click outside handler for cleanup
 
 /* ============================================
    Presentation Mode Layout Calculation
@@ -575,6 +727,26 @@ const PRESENTATION_MIN_FONT_PX = 18;
 const PRESENTATION_MAX_FONT_PX = 44;
 
 /**
+ * Updates presentation mode column count based on question count
+ * Only affects presentation mode, not normal worksheet or PDF
+ * 
+ * @param {number} questionCount - Number of questions to display
+ * @returns {number} Column count (3, 4, or 5)
+ */
+function updatePresentationColumns(questionCount) {
+    if (questionCount >= 1 && questionCount <= 9) {
+        return 3;
+    } else if (questionCount >= 10 && questionCount <= 20) {
+        return 4;
+    } else if (questionCount >= 21 && questionCount <= 40) {
+        return 5;
+    } else {
+        // 40+ questions: 5 columns with wrapping
+        return 5;
+    }
+}
+
+/**
  * Calculates optimal columns and font size for presentation mode
  * Font size is primarily driven by question count, with simple tiers
  * 
@@ -587,29 +759,26 @@ const PRESENTATION_MAX_FONT_PX = 44;
  * @returns {Object} Object with columns and fontSizePx
  */
 function calculatePresentationLayout(questionCount) {
-    let columns;
     let fontSize;
+
+    // Get column count from the new responsive function
+    const columns = updatePresentationColumns(questionCount);
 
     // Font size tiers based on question count
     if (questionCount <= 12) {
-        // Small sets: very large text, 3 columns
-        columns = 3;
+        // Small sets: very large text
         fontSize = 40;
     } else if (questionCount <= 24) {
-        // Medium-small sets: large text, 4 columns
-        columns = 4;
+        // Medium-small sets: large text
         fontSize = 32;
     } else if (questionCount <= 40) {
-        // Medium sets: medium text, 4 columns
-        columns = 4;
+        // Medium sets: medium text
         fontSize = 26;
     } else if (questionCount <= 60) {
-        // Medium-large sets: smaller but readable, 5 columns
-        columns = 5;
+        // Medium-large sets: smaller but readable
         fontSize = 22;
     } else {
-        // Large sets: small but legible, 5 columns
-        columns = 5;
+        // Large sets: small but legible
         fontSize = 18;
     }
 
@@ -617,9 +786,6 @@ function calculatePresentationLayout(questionCount) {
     // Use viewport height as a constraint, but don't let it drive the size
     const maxAllowed = Math.min(PRESENTATION_MAX_FONT_PX, window.innerHeight / 18);
     fontSize = Math.max(PRESENTATION_MIN_FONT_PX, Math.min(fontSize, maxAllowed));
-
-    // Optional clamp for columns (shouldn't be needed with current tiers, but safety check)
-    columns = Math.max(1, Math.min(columns, 5));
 
     return {
         columns: columns,
@@ -676,6 +842,12 @@ function openPresentationMode() {
     // Set up resize handler for layout updates
     setupPresentationResizeHandler();
     
+    // Set up keyboard shortcuts for presentation mode
+    setupPresentationKeyboardShortcuts();
+    
+    // Set up help tooltip
+    setupHelpTooltip();
+    
     // Focus the close button for keyboard accessibility
     document.getElementById('closePresentationBtn').focus();
     
@@ -695,6 +867,12 @@ function closePresentationMode() {
     
     // Remove resize handler
     removePresentationResizeHandler();
+    
+    // Remove keyboard shortcuts
+    removePresentationKeyboardShortcuts();
+    
+    // Remove help tooltip handlers
+    removeHelpTooltip();
     
     // Exit fullscreen if active
     if (document.fullscreenElement) {
@@ -827,13 +1005,6 @@ function setupPresentationEventListeners() {
         fullscreenBtn.style.display = 'none';
     }
     
-    // ESC key to close
-    document.addEventListener('keydown', function handleEscape(e) {
-        if (e.key === 'Escape' && document.getElementById('presentationOverlay').style.display !== 'none') {
-            closePresentationMode();
-        }
-    });
-    
     // Mark as set up
     document.getElementById('closePresentationBtn').setAttribute('data-listeners-setup', 'true');
 }
@@ -872,6 +1043,222 @@ function removePresentationResizeHandler() {
         window.removeEventListener('resize', presentationResizeHandler);
         document.removeEventListener('fullscreenchange', presentationResizeHandler);
         presentationResizeHandler = null;
+    }
+}
+
+/**
+ * Sets up keyboard shortcuts for presentation mode
+ * A → toggle answers
+ * F → toggle fullscreen
+ * Esc → exit presentation mode
+ */
+function setupPresentationKeyboardShortcuts() {
+    // Remove existing handler if any
+    removePresentationKeyboardShortcuts();
+    
+    // Create keyboard handler function
+    presentationKeyboardHandler = function(event) {
+        const overlay = document.getElementById('presentationOverlay');
+        
+        // Only handle shortcuts when presentation mode is visible
+        if (!overlay || overlay.style.display === 'none') {
+            return;
+        }
+        
+        // Ignore shortcuts if user is typing in an input field
+        if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA' || event.target.isContentEditable) {
+            return;
+        }
+        
+        // Handle keyboard shortcuts
+        switch (event.key.toLowerCase()) {
+            case 'a':
+                // A → toggle answers
+                event.preventDefault();
+                togglePresentationAnswers();
+                break;
+                
+            case 'f':
+                // F → toggle fullscreen
+                event.preventDefault();
+                toggleFullscreen();
+                break;
+                
+            case 'escape':
+                // Esc → exit presentation mode
+                event.preventDefault();
+                closePresentationMode();
+                break;
+        }
+    };
+    
+    // Add event listener
+    document.addEventListener('keydown', presentationKeyboardHandler);
+}
+
+/**
+ * Removes keyboard shortcuts when presentation mode is closed
+ */
+function removePresentationKeyboardShortcuts() {
+    if (presentationKeyboardHandler) {
+        document.removeEventListener('keydown', presentationKeyboardHandler);
+        presentationKeyboardHandler = null;
+    }
+}
+
+/**
+ * Sets up the help tooltip functionality
+ */
+function setupHelpTooltip() {
+    const helpBtn = document.getElementById('helpBtn');
+    const tooltip = document.getElementById('helpTooltip');
+    
+    if (!helpBtn || !tooltip) {
+        return;
+    }
+    
+    // Toggle tooltip on click
+    helpBtn.addEventListener('click', function(event) {
+        event.stopPropagation();
+        toggleHelpTooltip();
+    });
+}
+
+/**
+ * Toggles the help tooltip visibility
+ */
+function toggleHelpTooltip() {
+    const tooltip = document.getElementById('helpTooltip');
+    if (!tooltip) {
+        return;
+    }
+    
+    const isVisible = tooltip.style.display !== 'none';
+    
+    if (isVisible) {
+        hideHelpTooltip();
+    } else {
+        showHelpTooltip();
+    }
+}
+
+/**
+ * Shows the help tooltip
+ */
+function showHelpTooltip() {
+    const tooltip = document.getElementById('helpTooltip');
+    if (!tooltip) {
+        return;
+    }
+    
+    // Remove fade-out class if present
+    tooltip.classList.remove('fade-out');
+    
+    // Show tooltip
+    tooltip.style.display = 'block';
+    
+    // Set up click outside handler
+    setupClickOutsideHandler();
+}
+
+/**
+ * Hides the help tooltip
+ */
+function hideHelpTooltip() {
+    const tooltip = document.getElementById('helpTooltip');
+    if (!tooltip) {
+        return;
+    }
+    
+    // Add fade-out animation
+    tooltip.classList.add('fade-out');
+    
+    // Hide after animation completes
+    setTimeout(() => {
+        tooltip.style.display = 'none';
+        tooltip.classList.remove('fade-out');
+    }, 200);
+    
+    // Remove click outside handler
+    removeClickOutsideHandler();
+}
+
+/**
+ * Auto-shows the help tooltip for 3 seconds when entering presentation mode
+ */
+function autoShowHelpTooltip() {
+    // Clear any existing timeout
+    if (helpTooltipAutoShowTimeout) {
+        clearTimeout(helpTooltipAutoShowTimeout);
+    }
+    
+    // Show tooltip immediately
+    showHelpTooltip();
+    
+    // Hide after 3 seconds
+    helpTooltipAutoShowTimeout = setTimeout(() => {
+        hideHelpTooltip();
+        helpTooltipAutoShowTimeout = null;
+    }, 3000);
+}
+
+/**
+ * Sets up click outside handler to close tooltip
+ */
+function setupClickOutsideHandler() {
+    // Remove existing handler if any
+    removeClickOutsideHandler();
+    
+    helpTooltipClickOutsideHandler = function(event) {
+        const tooltip = document.getElementById('helpTooltip');
+        const helpBtn = document.getElementById('helpBtn');
+        
+        // Don't close if clicking on the tooltip or help button
+        if (tooltip && tooltip.contains(event.target)) {
+            return;
+        }
+        if (helpBtn && helpBtn.contains(event.target)) {
+            return;
+        }
+        
+        // Close tooltip if clicking outside
+        hideHelpTooltip();
+    };
+    
+    // Add event listener with a small delay to avoid immediate closure
+    setTimeout(() => {
+        document.addEventListener('click', helpTooltipClickOutsideHandler);
+    }, 0);
+}
+
+/**
+ * Removes click outside handler
+ */
+function removeClickOutsideHandler() {
+    if (helpTooltipClickOutsideHandler) {
+        document.removeEventListener('click', helpTooltipClickOutsideHandler);
+        helpTooltipClickOutsideHandler = null;
+    }
+}
+
+/**
+ * Removes help tooltip handlers when presentation mode is closed
+ */
+function removeHelpTooltip() {
+    // Clear auto-show timeout
+    if (helpTooltipAutoShowTimeout) {
+        clearTimeout(helpTooltipAutoShowTimeout);
+        helpTooltipAutoShowTimeout = null;
+    }
+    
+    // Remove click outside handler
+    removeClickOutsideHandler();
+    
+    // Hide tooltip
+    const tooltip = document.getElementById('helpTooltip');
+    if (tooltip) {
+        tooltip.style.display = 'none';
+        tooltip.classList.remove('fade-out');
     }
 }
 
