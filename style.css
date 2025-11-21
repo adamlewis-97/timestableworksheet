@@ -1262,6 +1262,119 @@ body {
     }
 }
 
+@media (max-width: 600px) {
+    /* Grid Fixes */
+    .tables-grid {
+        grid-template-columns: repeat(2, 1fr);
+        justify-items: center;
+    }
+    
+    .checkbox-text {
+        font-size: 0.9rem;
+    }
+    
+    /* Button Improvements */
+    .btn {
+        min-height: 48px;
+        padding: 0.75rem 1.25rem;
+        font-size: 1.05rem;
+        width: 100%;
+        max-width: 100%;
+    }
+    
+    .button-group {
+        flex-direction: column;
+        align-items: center;
+        gap: var(--spacing-sm);
+    }
+    
+    /* Spacing & Margins - Reduce by 25% */
+    .container {
+        padding: calc(var(--spacing-lg) * 0.75);
+    }
+    
+    .control-group {
+        margin-bottom: calc(var(--spacing-md) * 0.75);
+    }
+    
+    .button-group {
+        margin-top: calc(var(--spacing-lg) * 0.75);
+    }
+    
+    .about-section {
+        margin: calc(var(--spacing-xl) * 0.75) auto;
+        padding: calc(var(--spacing-lg) * 0.75);
+    }
+    
+    .about-section h2 {
+        margin-bottom: calc(var(--spacing-md) * 0.75);
+    }
+    
+    /* Footer Fixes */
+    .site-footer {
+        padding-top: 40px;
+        padding-bottom: 30px;
+        margin-top: 50px;
+    }
+    
+    .footer-branding {
+        margin-bottom: calc(var(--spacing-xl) * 0.75);
+        gap: 0.5rem;
+    }
+    
+    .footer-links {
+        flex-direction: column;
+        gap: var(--spacing-md);
+        margin-bottom: 30px;
+        align-items: center;
+    }
+    
+    .footer-link-group {
+        width: 100%;
+        align-items: center;
+    }
+    
+    .footer-copyright {
+        padding-top: 30px;
+    }
+    
+    /* Typography */
+    .page-body p,
+    .about-section p,
+    p {
+        font-size: 0.9rem;
+    }
+    
+    .control-label {
+        font-size: 0.95rem;
+    }
+    
+    h1, h2, h3 {
+        text-align: center;
+    }
+    
+    /* Section Spacing */
+    .worksheet-section,
+    .answers-section {
+        margin-bottom: calc(var(--spacing-lg) * 0.75);
+        padding: calc(var(--spacing-lg) * 0.75);
+    }
+    
+    .section-label {
+        margin-bottom: calc(var(--spacing-md) * 0.75);
+    }
+    
+    /* Preset Buttons */
+    .preset-buttons {
+        gap: var(--spacing-xs);
+    }
+    
+    .preset-btn {
+        font-size: 0.85rem;
+        padding: 0.5rem 0.75rem;
+    }
+}
+
 @media (max-width: 480px) {
     .footer-links {
         flex-direction: column;
