@@ -1003,6 +1003,11 @@ body {
     line-height: 1.6;
 }
 
+.presentation-answer {
+    color: #d32f2f; /* Red color for answers */
+    font-weight: 500;
+}
+
 .presentation-answers-section {
     /* Answer key section is not used in presentation mode - answers are shown inline */
     display: none !important;

@@ -308,13 +308,11 @@ function generateWorksheet() {
         currentQuestions.push(question);
     }
     
-    // Render the worksheet and answers
+    // Render the worksheet and answers (for presentation mode only)
     renderWorksheet(currentQuestions);
     renderAnswers(currentQuestions);
     
-    // Show the sections
-    document.getElementById('worksheetSection').style.display = 'block';
-    document.getElementById('answersSection').style.display = 'block';
+    // Sections remain hidden - only presentation mode shows content
 }
 
 /**
@@ -564,14 +562,12 @@ function handleDownload() {
         pdfQuestions.push(question);
     }
     
-    // Also update the displayed worksheet with these questions
+    // Also update the displayed worksheet with these questions (for presentation mode only)
     currentQuestions = pdfQuestions;
     renderWorksheet(pdfQuestions);
     renderAnswers(pdfQuestions);
     
-    // Show the sections
-    document.getElementById('worksheetSection').style.display = 'block';
-    document.getElementById('answersSection').style.display = 'block';
+    // Sections remain hidden - only presentation mode shows content
     
     // Generate and download the PDF
     downloadWorksheetPdf(pdfQuestions);
@@ -584,6 +580,7 @@ function handleDownload() {
 /**
  * Generates and downloads a PDF of the worksheet
  * Uses jsPDF library to create an A4 portrait PDF
+ * Creates two pages: first with blanks, second with answers in red
  * Dynamically adjusts columns and font size to fit on one page
  * @param {Object[]} questions - Array of question objects
  */
@@ -609,28 +606,59 @@ function downloadWorksheetPdf(questions) {
     const columnWidth = (usableWidth - (layout.columns - 1) * 5) / layout.columns; // 5mm gap between columns
     const columnGap = 5;
     
-    // Title
-    doc.setFontSize(20);
-    doc.setFont(undefined, 'bold');
-    doc.text('Timestable worksheet', pageWidth / 2, margin + 8, { align: 'center' });
-    
     // Starting position after title
     const titleY = margin + 8;
     const titleHeight = 12;
     let startY = titleY + titleHeight + 5; // Start after title with small gap
     const maxY = pageHeight - margin;
-    const usableHeight = maxY - startY;
     
     // Calculate questions per column
     const questionsPerColumn = Math.ceil(questions.length / layout.columns);
     const lineSpacing = layout.lineHeight;
+    
+    // Render first page (with blanks)
+    renderPdfPage(doc, questions, layout, pageWidth, pageHeight, margin, columnWidth, columnGap, startY, maxY, questionsPerColumn, lineSpacing, false);
+    
+    // Add second page with answers
+    doc.addPage();
+    renderPdfPage(doc, questions, layout, pageWidth, pageHeight, margin, columnWidth, columnGap, startY, maxY, questionsPerColumn, lineSpacing, true);
+    
+    // Generate filename with timestamp
+    const timestamp = new Date().toISOString().split('T')[0];
+    const filename = `times-table-worksheet-${timestamp}.pdf`;
+    
+    // Download the PDF
+    doc.save(filename);
+}
+
+/**
+ * Renders a single page of the PDF worksheet
+ * @param {Object} doc - jsPDF document instance
+ * @param {Object[]} questions - Array of question objects
+ * @param {Object} layout - Layout configuration object
+ * @param {number} pageWidth - Page width in mm
+ * @param {number} pageHeight - Page height in mm
+ * @param {number} margin - Page margin in mm
+ * @param {number} columnWidth - Width of each column in mm
+ * @param {number} columnGap - Gap between columns in mm
+ * @param {number} startY - Starting Y position after title
+ * @param {number} maxY - Maximum Y position before footer
+ * @param {number} questionsPerColumn - Number of questions per column
+ * @param {number} lineSpacing - Spacing between lines
+ * @param {boolean} showAnswers - Whether to show answers (true) or blanks (false)
+ */
+function renderPdfPage(doc, questions, layout, pageWidth, pageHeight, margin, columnWidth, columnGap, startY, maxY, questionsPerColumn, lineSpacing, showAnswers) {
+    // Title
+    doc.setFontSize(20);
+    doc.setFont(undefined, 'bold');
+    const titleText = showAnswers ? 'Timestable worksheet - Answer key' : 'Timestable worksheet';
+    doc.text(titleText, pageWidth / 2, margin + 8, { align: 'center' });
     
     // Set font for questions
     doc.setFontSize(layout.fontSize);
     doc.setFont(undefined, 'normal');
     
     // Distribute questions across columns
-    // Use the calculated line height exactly to fill the page
     for (let col = 0; col < layout.columns; col++) {
         const columnX = margin + col * (columnWidth + columnGap);
         let yPosition = startY;
@@ -644,17 +672,27 @@ function downloadWorksheetPdf(questions) {
                 break;
             }
             
-            // Check if we would overflow (shouldn't happen with proper calculation)
+            // Check if we would overflow
             if (yPosition > maxY - lineSpacing) {
                 break;
             }
             
             const question = questions[questionIndex];
-            // Add adequate spacing between question number and question text
-            // Use extra space for double-digit numbers to maintain consistent spacing
             const questionNumber = questionIndex + 1;
             const spacing = questionNumber >= 10 ? '  ' : ' '; // Extra space for double digits
-            const questionText = `${questionNumber})${spacing}${question.questionText}`;
+            
+            let questionText;
+            let answerValue = null;
+            
+            if (showAnswers) {
+                // Replace blank with answer - we'll color the answer separately
+                const questionPart = question.questionText.replace('______', '');
+                questionText = `${questionNumber})${spacing}${questionPart}${question.answer}`;
+                answerValue = String(question.answer);
+            } else {
+                // Keep the blank
+                questionText = `${questionNumber})${spacing}${question.questionText}`;
+            }
             
             // Split text if too long for column
             const maxWidth = columnWidth - 8; // Leave small padding
@@ -665,15 +703,46 @@ function downloadWorksheetPdf(questions) {
                 if (yPosition > maxY - lineSpacing) {
                     return; // Skip if would overflow
                 }
-                doc.text(line, columnX, yPosition);
+                
+                // If showing answers and this is the last line, color the answer red
+                if (showAnswers && answerValue && lineIndex === lines.length - 1 && line.includes(answerValue)) {
+                    // Find the position of the answer in the line
+                    const answerIndex = line.lastIndexOf(answerValue);
+                    if (answerIndex !== -1) {
+                        const beforeAnswer = line.substring(0, answerIndex);
+                        const answer = line.substring(answerIndex);
+                        
+                        // Draw text before answer in black
+                        doc.setTextColor(0, 0, 0); // Black
+                        if (beforeAnswer) {
+                            doc.text(beforeAnswer, columnX, yPosition);
+                        }
+                        
+                        // Calculate position for answer
+                        const beforeAnswerWidth = beforeAnswer ? doc.getTextWidth(beforeAnswer) : 0;
+                        const answerX = columnX + beforeAnswerWidth;
+                        
+                        // Draw answer in red
+                        doc.setTextColor(211, 47, 47); // Red color (#d32f2f)
+                        doc.text(answer, answerX, yPosition);
+                    } else {
+                        // Fallback: draw entire line in black
+                        doc.setTextColor(0, 0, 0);
+                        doc.text(line, columnX, yPosition);
+                    }
+                } else {
+                    // Draw line in black
+                    doc.setTextColor(0, 0, 0);
+                    doc.text(line, columnX, yPosition);
+                }
+                
                 // Only advance if not the last line of the question
                 if (lineIndex < lines.length - 1) {
                     yPosition += lineSpacing * 0.6; // Smaller spacing for wrapped lines
                 }
             });
             
-            // Move to next question position using the calculated line height
-            // This ensures we fill the page exactly
+            // Move to next question position
             yPosition += lineSpacing;
         }
     }
@@ -683,13 +752,6 @@ function downloadWorksheetPdf(questions) {
     doc.setFont(undefined, 'normal');
     doc.setTextColor(100, 100, 100); // Gray color for subtle footer
     doc.text('timestableworksheet.com', pageWidth / 2, pageHeight - 8, { align: 'center' });
-    
-    // Generate filename with timestamp
-    const timestamp = new Date().toISOString().split('T')[0];
-    const filename = `times-table-worksheet-${timestamp}.pdf`;
-    
-    // Download the PDF
-    doc.save(filename);
 }
 
 /* ============================================
@@ -909,8 +971,9 @@ function renderPresentationWorksheet(questions, showAnswers) {
         questionDiv.className = 'presentation-question';
         
         if (showAnswers) {
-            // Show question with answer: "1) 6 × 12 = 72"
-            questionDiv.textContent = `${index + 1}) ${question.questionText.replace('______', question.answer)}`;
+            // Show question with answer in red: "1) 6 × 12 = 72"
+            const questionText = question.questionText.replace('______', '');
+            questionDiv.innerHTML = `${index + 1}) ${questionText}<span class="presentation-answer">${question.answer}</span>`;
         } else {
             // Show question without answer: "1) 6 × 12 ="
             const questionText = question.questionText.replace('______', '');
