@@ -126,8 +126,8 @@
         </section>
     </div>
 
-    <!-- Footer -->
-    <footer class="site-footer">
+        <!-- Footer -->
+        <footer class="site-footer">
             <div class="footer-content">
                 <div class="footer-branding">
                     <img src="logo.webp" alt="Times Table Worksheet Logo" class="footer-logo">
@@ -142,8 +142,8 @@
                         <h3 class="footer-group-title">Resources</h3>
                         <nav class="footer-group-nav">
                             <a href="faq.html" class="footer-link">FAQ</a>
-                            <a href="contact.html" class="footer-link">Contact</a>
-                        </nav>
+                <a href="contact.html" class="footer-link">Contact</a>
+            </nav>
                     </div>
                     
                     <div class="footer-link-group">
@@ -200,6 +200,22 @@
                     </ol>
                 </div>
             </div>
+            
+            <!-- Font controls in bottom right -->
+            <div class="presentation-font-controls" role="group" aria-label="Font controls">
+                <button type="button" id="fontSizeDecreaseBtn" class="presentation-btn presentation-btn-font" aria-label="Decrease font size">
+                    <span class="font-icon">A</span><span class="font-arrow">▼</span>
+                </button>
+                <button type="button" id="fontWeightToggleBtn" class="presentation-btn presentation-btn-font" aria-label="Toggle font weight">
+                    <span class="font-icon">B</span>
+                </button>
+                <button type="button" id="fontSizeIncreaseBtn" class="presentation-btn presentation-btn-font" aria-label="Increase font size">
+                    <span class="font-icon">A</span><span class="font-arrow">▲</span>
+                </button>
+                <button type="button" id="fontResetBtn" class="presentation-btn presentation-btn-font" aria-label="Reset font to default">
+                    <span class="font-icon">↺</span>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -241,6 +257,12 @@
         ]
     }
     </script>
+
+    <!-- Vercel Speed Insights -->
+    <script>
+        window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
+    </script>
+    <script defer src="/_vercel/speed-insights/script.js"></script>
 </body>
 </html>
 

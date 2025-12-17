@@ -764,6 +764,8 @@ let presentationResizeHandler = null; // Store resize handler for cleanup
 let presentationKeyboardHandler = null; // Store keyboard handler for cleanup
 let helpTooltipAutoShowTimeout = null; // Store auto-show timeout for cleanup
 let helpTooltipClickOutsideHandler = null; // Store click outside handler for cleanup
+let presentationFontSizeMultiplier = 1.0; // User-controlled font size multiplier (default: 1.0 = 100%)
+let presentationFontWeight = 'normal'; // User-controlled font weight (default: 'normal')
 
 /* ============================================
    Presentation Mode Layout Calculation
@@ -877,6 +879,13 @@ function updatePresentationLayout() {
     // Apply CSS variables to overlay
     overlay.style.setProperty('--presentation-columns', layout.columns);
     overlay.style.setProperty('--presentation-font-size', layout.fontSizePx + 'px');
+    
+    // Apply user-controlled font size (multiplier applied to base font size)
+    const userFontSize = layout.fontSizePx * presentationFontSizeMultiplier;
+    overlay.style.setProperty('--presentation-user-font-size', userFontSize + 'px');
+    
+    // Apply user-controlled font weight
+    overlay.style.setProperty('--presentation-user-font-weight', presentationFontWeight);
 }
 
 /**
@@ -894,6 +903,11 @@ function openPresentationMode() {
     // Reset answers visibility
     presentationAnswersVisible = false;
     updateAnswersToggleButton();
+    
+    // Reset font settings to defaults when opening
+    presentationFontSizeMultiplier = 1.0;
+    presentationFontWeight = 'normal';
+    updateFontWeightButton();
     
     // Render questions in presentation mode (this also updates layout)
     renderPresentationWorksheet(currentQuestions, false);
@@ -1067,6 +1081,16 @@ function setupPresentationEventListeners() {
         // Hide button if fullscreen API not available
         fullscreenBtn.style.display = 'none';
     }
+    
+    // Font size controls
+    document.getElementById('fontSizeDecreaseBtn').addEventListener('click', decreaseFontSize);
+    document.getElementById('fontSizeIncreaseBtn').addEventListener('click', increaseFontSize);
+    
+    // Font weight toggle
+    document.getElementById('fontWeightToggleBtn').addEventListener('click', toggleFontWeight);
+    
+    // Font reset
+    document.getElementById('fontResetBtn').addEventListener('click', resetFontSettings);
     
     // Mark as set up
     document.getElementById('closePresentationBtn').setAttribute('data-listeners-setup', 'true');
@@ -1323,5 +1347,64 @@ function removeHelpTooltip() {
         tooltip.style.display = 'none';
         tooltip.classList.remove('fade-out');
     }
+}
+
+/* ============================================
+   Presentation Mode Font Controls
+   ============================================ */
+
+/**
+ * Decreases the font size in presentation mode
+ * Minimum multiplier: 0.5 (50% of base size)
+ */
+function decreaseFontSize() {
+    presentationFontSizeMultiplier = Math.max(0.5, presentationFontSizeMultiplier - 0.1);
+    updatePresentationLayout();
+}
+
+/**
+ * Increases the font size in presentation mode
+ * Maximum multiplier: 2.0 (200% of base size)
+ */
+function increaseFontSize() {
+    presentationFontSizeMultiplier = Math.min(2.0, presentationFontSizeMultiplier + 0.1);
+    updatePresentationLayout();
+}
+
+/**
+ * Toggles font weight between normal and bold
+ */
+function toggleFontWeight() {
+    presentationFontWeight = presentationFontWeight === 'normal' ? 'bold' : 'normal';
+    updateFontWeightButton();
+    updatePresentationLayout();
+}
+
+/**
+ * Updates the font weight toggle button appearance
+ */
+function updateFontWeightButton() {
+    const btn = document.getElementById('fontWeightToggleBtn');
+    if (btn) {
+        // Button just shows "B" - update active state
+        if (presentationFontWeight === 'bold') {
+            btn.classList.add('font-weight-active');
+            btn.style.fontWeight = 'bold';
+        } else {
+            btn.classList.remove('font-weight-active');
+            btn.style.fontWeight = 'normal';
+        }
+        btn.setAttribute('aria-label', `Font weight: ${presentationFontWeight}`);
+    }
+}
+
+/**
+ * Resets font size and weight to default values
+ */
+function resetFontSettings() {
+    presentationFontSizeMultiplier = 1.0;
+    presentationFontWeight = 'normal';
+    updateFontWeightButton();
+    updatePresentationLayout();
 }
 
