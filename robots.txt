@@ -1,6 +1,6 @@
 User-agent: *
 Disallow:
 
-Sitemap: https://www.timestableworksheet.com/sitemap.xml
+Sitemap: https://www.timestableworksheet.co.uk/sitemap.xml
 
 

@@ -751,7 +751,7 @@ function renderPdfPage(doc, questions, layout, pageWidth, pageHeight, margin, co
     doc.setFontSize(8);
     doc.setFont(undefined, 'normal');
     doc.setTextColor(100, 100, 100); // Gray color for subtle footer
-    doc.text('timestableworksheet.com', pageWidth / 2, pageHeight - 8, { align: 'center' });
+    doc.text('timestableworksheet.co.uk', pageWidth / 2, pageHeight - 8, { align: 'center' });
 }
 
 /* ============================================
